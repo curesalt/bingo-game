@@ -108,12 +108,7 @@
             .cell.checked {
                 background: linear-gradient(180deg, #ffdf4c 0%, #faa21a 100%);
                 color: #ffffff;
-                text-shadow:
-                    -2px -2px 0 #c37013,
-                    2px -2px 0 #c37013,
-                    -2px 2px 0 #c37013,
-                    2px 2px 0 #c37013,
-                    0px 4px 0px #c37013;
+                border: 4px solid #c37013;
                 box-shadow:
                     inset 2px 2px 5px rgba(255, 255, 255, 0.8),
                     0 6px 0 #d97d10,
@@ -254,7 +249,7 @@
                 가공방 빙고 게임
             </h1>
             <div style="font-size: 20px; color: #999; margin-bottom: 25px">
-                ver. 1.0.0
+                ver. 1.0.3
             </div>
 
             <input
@@ -674,6 +669,12 @@
                     "none";
                 showScreen("waiting-screen");
             });
+
+            //뒤로가기 및 새로고침 방지 모달 이벤트 추가
+            window.addEventListener('beforeunload', function (e) {
+                e.preventDefault();
+                e.returnValue = '새로고침 할 시 데이터가 초기화되어 정상적인 게임 진행이 불가합니다. 새로고침하시겠습니까?';
+            });   
         </script>
     </body>
 </html>
