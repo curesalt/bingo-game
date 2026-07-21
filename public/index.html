@@ -117,29 +117,31 @@
                 outline: none;
             }
 
-            /* [수정됨] 글자 내부를 파먹지 않는 새로운 입체 테두리 방식 적용 */
+            /* 글자 내부를 파먹지 않는 완벽하고 정교한 테두리 방식 */
             .cell-num {
                 position: relative;
-                z-index: 1; /* z-index를 설정하여 가상요소가 칸 배경 밑으로 숨는 것을 방지 */
+                z-index: 1;
+                display: inline-block; 
             }
 
             .cell.checked .cell-num {
                 color: #ffffff;
-                text-shadow: none; /* 지저분한 그림자 완벽 제거 */
+                text-shadow: none; 
                 -webkit-text-stroke: 0; 
             }
 
-            /* 하얀 메인 글씨 바로 뒤에 1~2pt 더 크고 두꺼운 주황색 복제 글씨를 깔아줍니다 */
+            /* 하얀 메인 글씨 바로 뒤에 똑같은 크기의 글씨를 겹치고 테두리 부여 */
             .cell.checked .cell-num::before {
                 content: attr(data-num);
                 position: absolute;
                 left: 50%;
                 top: 50%;
                 transform: translate(-50%, -50%);
-                font-size: 32px; /* 본래(32px)보다 약간 큼 */
+                font-size: inherit; 
+                width: max-content;
                 color: #c37013;
-                -webkit-text-stroke: 3px #c37013; /* 주황색 글씨에만 외곽선을 주어 완벽한 테두리 형성 */
-                z-index: -1; /* 메인 하얀색 글씨 뒤로 배치 */
+                -webkit-text-stroke: 4px #c37013;
+                z-index: -1; 
             }
         
             /* 지속되는 네온 빛 효과 */
@@ -174,7 +176,7 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.5); /* 모달 뒷배경 살짝 어둡게 */
+                background: rgba(0, 0, 0, 0.5); 
                 justify-content: center;
                 align-items: center;
                 z-index: 1000;
@@ -275,10 +277,9 @@
                 가공방 빙고 게임
             </h1>
             <div style="font-size: 20px; color: #999; margin-bottom: 25px">
-                ver. 1.2.1
+                ver. 1.2.7
             </div>
 
-            <!-- [추가됨] 브라우저 권장 문구 -->
             <div style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;">
                 이 게임은 구글 크롬, 사파리 브라우저에 최적화 되어있습니다.
             </div>
@@ -297,6 +298,11 @@
             <h3 class="nickname-display" id="my-name-waiting"></h3>
             <h1 style="color: #fb726d; font-weight: normal">대기 중...</h1>
             <p>호스트가 게임을 시작할 때까지 기다려주세요.</p>
+            
+            <!-- [추가됨] 대기 중 입장 취소(나가기) 버튼 -->
+            <button onclick="leaveGame()" style="background-color: #7f8c8d; box-shadow: 0 4px 0 #5c666a; margin-top: 30px; font-size: 16px; padding: 8px 16px;">
+                🚪 입장 취소 (처음으로)
+            </button>
         </div>
 
         <div id="filling-screen" class="screen">
@@ -313,7 +319,6 @@
                 <div id="preview-board" class="bingo-board"></div>
             </div>
 
-            <!-- [수정됨] 하단 버튼 영역 구조 변경 -->
             <div class="action-buttons">
                 <!-- 랜덤 채우기 버튼 -->
                 <button
@@ -383,7 +388,7 @@
             </div>
         </div>
 
-        <!-- [추가됨] 랜덤 채우기 확인 모달 -->
+        <!-- 랜덤 채우기 확인 모달 -->
         <div id="random-fill-modal" class="modal-overlay">
             <div class="modal-content">
                 <h3 style="margin-top: 0; color: #fb726d; font-weight: normal;">🎲 랜덤 채우기</h3>
@@ -420,6 +425,7 @@
             let checkedCells = new Array(25).fill(false);
             let amIWinner = false;
             let animatedLines = new Set();
+            let isIntentionallyLeaving = false; // [추가됨] 의도적인 나가기를 체크하는 변수
 
             function showScreen(screenId) {
                 document
@@ -453,12 +459,19 @@
                 });
             }
 
+            // [추가됨] 대기 취소 및 나가기 함수
+            function leaveGame() {
+                if (confirm("입장을 취소하고 처음 화면으로 돌아가시겠습니까?")) {
+                    isIntentionallyLeaving = true; // 새로고침 방지 알림창을 무시하도록 설정
+                    window.location.reload(); // 새로고침 시 서버와의 소켓이 자동으로 끊어지며 완벽히 초기화됨
+                }
+            }
+
             socket.on("phase_filling", () => {
                 showScreen("filling-screen");
                 renderPreviewBoard();
             });
 
-            // [추가됨] 랜덤 채우기 모달 제어 함수
             function openRandomFillPopup() {
                 if (isReady) return;
                 document.getElementById('random-fill-modal').style.display = 'flex';
@@ -468,10 +481,8 @@
                 document.getElementById('random-fill-modal').style.display = 'none';
             }
 
-            // [추가됨] 랜덤 채우기 실행 로직
             function executeRandomFill() {
                 let randomNums = [];
-                // 1부터 50까지 겹치지 않는 난수 25개 생성
                 while (randomNums.length < 25) {
                     let r = Math.floor(Math.random() * 50) + 1;
                     if (randomNums.indexOf(r) === -1) {
@@ -494,7 +505,6 @@
                         cell.classList.add("selected-cell");
                     
                     if (myBoard[i] !== null) {
-                        // [수정됨] span 태그와 data-num 속성을 추가하여 이중 테두리 CSS 기능 연동
                         cell.innerHTML = `<span class="cell-num" data-num="${myBoard[i]}">${myBoard[i]}</span>`;
                         filledCount++;
                     }
@@ -555,7 +565,6 @@
                 document.getElementById("ready-btn").disabled = true;
                 document.getElementById("cancel-ready-btn").style.display = "inline-block";
                 
-                // [수정됨] 준비 완료 시 랜덤 채우기 버튼 숨김
                 document.getElementById("random-fill-btn").style.display = "none";
                 
                 renderPreviewBoard();
@@ -568,7 +577,6 @@
                 document.getElementById("ready-btn").disabled = false;
                 document.getElementById("cancel-ready-btn").style.display = "none";
                 
-                // [수정됨] 준비 취소 시 랜덤 채우기 버튼 다시 표시
                 document.getElementById("random-fill-btn").style.display = "inline-block";
                 
                 socket.emit("guest_cancel_ready");
@@ -590,7 +598,6 @@
                     const cell = document.createElement("div");
                     cell.className = "cell";
                     cell.id = `cell-${index}`;
-                    // [수정됨] span 태그와 data-num 속성을 추가하여 이중 테두리 CSS 기능 연동
                     cell.innerHTML = `<span class="cell-num" data-num="${num}">${num}</span>`;
                     board.appendChild(cell);
                 });
@@ -746,7 +753,6 @@
                 document.getElementById("ready-btn").style.display = "none";
                 document.getElementById("cancel-ready-btn").style.display = "none";
                 
-                // [수정됨] 게임 종료 및 초기화 시 랜덤 채우기 버튼 다시 복구
                 document.getElementById("random-fill-btn").style.display = "inline-block";
                 
                 document.getElementById("guest-winner-modal").style.display = "none";
@@ -754,8 +760,10 @@
                 showScreen("waiting-screen");
             });
 
-            // 뒤로가기 및 새로고침 방지 모달 이벤트 유지
+            // [수정됨] 뒤로가기 및 새로고침 방지 모달 (의도적 나가기일 경우 무시)
             window.addEventListener('beforeunload', function (e) {
+                if (isIntentionallyLeaving) return; // '입장 취소' 버튼을 누른 경우 경고창 없이 바로 나갑니다.
+                
                 e.preventDefault();
                 e.returnValue = '새로고침 할 시 데이터가 초기화되어 정상적인 게임 진행이 불가합니다. 새로고침하시겠습니까?'; 
             });
