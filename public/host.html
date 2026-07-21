@@ -14,7 +14,8 @@
                 font-family: "Jua", "Pretendard", sans-serif;
                 text-align: center;
                 margin: 0;
-                padding: 20px;
+                /* [수정 2번] 상단 UI가 겹치지 않도록 위쪽 padding을 70px로 변경 */
+                padding: 70px 20px 20px; 
                 background-color: #f4f4f9;
                 color: #333;
                 font-weight: normal;
@@ -83,7 +84,11 @@
                 color: #ff8b4d;
                 padding: 10px;
                 border-radius: 10px;
-                font-size: 18px;
+                /* [수정 1번] 글자 크기 조정 및 한 줄 강제 고정 */
+                font-size: 14px; 
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
                 box-shadow: 0 4px 0 #fbe6c1;
                 border: 1px solid #fbe6c1;
                 font-weight: normal;
@@ -102,7 +107,11 @@
                 padding: 15px 5px;
                 border-radius: 12px;
                 transition: all 0.2s;
-                font-size: 16px;
+                /* [수정 1번] 글자 크기 조정 및 한 줄 강제 고정 */
+                font-size: 14px; 
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
                 box-shadow: 0 4px 0 #ddd;
                 font-weight: normal;
             }
@@ -115,7 +124,8 @@
 
             .number-pool {
                 display: grid;
-                grid-template-columns: repeat(10, 50px);
+                /* [수정 4번, 5번] 10칸에서 5칸으로 변경하여 모바일 화면 최적화 및 가운데 정렬 성공 */
+                grid-template-columns: repeat(5, 50px); 
                 gap: 8px;
                 justify-content: center;
                 max-width: 650px;
@@ -196,7 +206,6 @@
                 z-index: 1000;
             }
 
-            /* [변경됨] 모달 패널 스타일 (목표 설정 팝업에도 재사용) */
             .modal-content,
             .popup-panel {
                 background: white;
@@ -249,7 +258,6 @@
                 font-weight: normal;
             }
 
-            /* [추가됨] 목표 줄 선택 젤리 버튼 */
             .target-btn {
                 font-weight: bold;
                 width: 100%;
@@ -283,7 +291,6 @@
                 👑 호스트 컨트롤 패널
             </h1>
 
-            <!-- [변경됨] 목표 설정 인풋 필드를 클릭 가능하게 만들고 화살표(number) 속성 제거 -->
             <div style="margin: 20px 0; font-size: 20px">
                 목표 빙고 줄 개수:
                 <input
@@ -332,8 +339,8 @@
         <div id="host-drawing" class="screen">
             <h1 style="font-size: 36px">🎯 번호 뽑기</h1>
             <p style="font-size: 18px">
-                아래 숫자를 클릭하여 전송하세요. (잘못 누른 번호는 다시 누르면
-                취소됩니다)
+                <!-- [수정 6번] 괄호 앞에 <br> 태그 추가 -->
+                아래 숫자를 클릭하여 전송하세요.<br>(잘못 누른 번호는 다시 누르면 취소됩니다) 
             </p>
 
             <div id="winner-panel">
@@ -377,7 +384,6 @@
             </div>
         </div>
 
-        <!-- [추가됨] 목표 줄 선택 팝업 UI -->
         <div
             id="target-select-popup"
             class="modal-overlay"
@@ -437,7 +443,6 @@
                 });
             });
 
-            // [추가됨] 목표 빙고 줄 팝업 제어 함수
             function openTargetPopup() {
                 const popup = document.getElementById("target-select-popup");
                 const pool = document.getElementById("target-number-pool");
@@ -586,6 +591,12 @@
                 btn.innerText = "2단계: 번호 뽑기 시작 (대기중)";
                 btn.style.backgroundColor = "#ccc";
                 btn.style.boxShadow = "0 4px 0 #999";
+            });
+
+            // [수정 3번] 뒤로가기 및 새로고침 방지 모달 이벤트 추가
+            window.addEventListener('beforeunload', function (e) {
+                e.preventDefault();
+                e.returnValue = '새로고침 할 시 데이터가 초기화되어 정상적인 게임 진행이 불가합니다. 새로고침하시겠습니까?'; 
             });
         </script>
     </body>
