@@ -14,7 +14,6 @@
                 font-family: "Jua", "Pretendard", sans-serif;
                 text-align: center;
                 margin: 0;
-                /* [수정 2번] 상단 UI가 겹치지 않도록 위쪽 padding을 70px로 변경 */
                 padding: 70px 20px 20px; 
                 background-color: #f4f4f9;
                 color: #333;
@@ -84,7 +83,6 @@
                 color: #ff8b4d;
                 padding: 10px;
                 border-radius: 10px;
-                /* [수정 1번] 글자 크기 조정 및 한 줄 강제 고정 */
                 font-size: 14px; 
                 white-space: nowrap; 
                 overflow: hidden; 
@@ -107,7 +105,6 @@
                 padding: 15px 5px;
                 border-radius: 12px;
                 transition: all 0.2s;
-                /* [수정 1번] 글자 크기 조정 및 한 줄 강제 고정 */
                 font-size: 14px; 
                 white-space: nowrap; 
                 overflow: hidden; 
@@ -124,7 +121,6 @@
 
             .number-pool {
                 display: grid;
-                /* [수정 4번, 5번] 10칸에서 5칸으로 변경하여 모바일 화면 최적화 및 가운데 정렬 성공 */
                 grid-template-columns: repeat(5, 50px); 
                 gap: 8px;
                 justify-content: center;
@@ -282,7 +278,8 @@
         </style>
     </head>
     <body>
-        <button id="btn-emergency" class="emergency-btn" onclick="endGame()">
+        <!-- [수정됨] 클릭 시 바로 종료되지 않고 커스텀 모달을 띄우는 함수 실행 -->
+        <button id="btn-emergency" class="emergency-btn" onclick="promptEmergencyExit()">
             🚨 비상탈출 (대기실 복귀)
         </button>
 
@@ -322,6 +319,15 @@
             >
                 1단계: 빙고판 채우기 시작
             </button>
+
+            <div style="margin-top: 50px; padding-top: 20px; border-top: 1px dashed #ccc;">
+                <button 
+                    onclick="forceResetServer()" 
+                    style="background-color: #7f8c8d; box-shadow: 0 4px 0 #5c666a; font-size: 14px; padding: 8px 16px; margin: 0;"
+                >
+                    🔄 에러 복구용 서버 강제 초기화
+                </button>
+            </div>
         </div>
 
         <div id="host-filling" class="screen">
@@ -339,7 +345,6 @@
         <div id="host-drawing" class="screen">
             <h1 style="font-size: 36px">🎯 번호 뽑기</h1>
             <p style="font-size: 18px">
-                <!-- [수정 6번] 괄호 앞에 <br> 태그 추가 -->
                 아래 숫자를 클릭하여 전송하세요.<br>(잘못 누른 번호는 다시 누르면 취소됩니다) 
             </p>
 
@@ -413,6 +418,18 @@
                 >
                     닫기
                 </button>
+            </div>
+        </div>
+
+        <!-- [추가됨] 비상탈출 커스텀 모달창 -->
+        <div id="emergency-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 style="margin-top: 0; color: #c0392b; font-weight: normal;">🚨 비상탈출</h3>
+                <p style="font-size: 20px; margin-bottom: 25px;">게임을 초기화할까요?</p>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="executeEmergencyExit()" style="background-color: #27ae60; box-shadow: 0 4px 0 #219653; flex: 1; margin: 0;">예</button>
+                    <button onclick="closeEmergencyModal()" style="background-color: #e74c3c; box-shadow: 0 4px 0 #c0392b; flex: 1; margin: 0;">아니오</button>
+                </div>
             </div>
         </div>
 
@@ -571,9 +588,30 @@
             function undoLastDraw() {
                 socket.emit("host_undo_last_draw");
             }
+            
             function endGame() {
                 socket.emit("host_end_game");
                 document.getElementById("winner-modal").style.display = "none";
+            }
+
+            // [추가됨] 비상탈출 모달 제어 함수
+            function promptEmergencyExit() {
+                document.getElementById('emergency-modal').style.display = 'flex';
+            }
+
+            function closeEmergencyModal() {
+                document.getElementById('emergency-modal').style.display = 'none';
+            }
+
+            function executeEmergencyExit() {
+                closeEmergencyModal();
+                endGame(); // 기존 강제 종료 함수 재사용
+            }
+
+            function forceResetServer() {
+                if (confirm("⚠️ 주의: 현재 진행 중인 게임 서버를 강제로 초기화하시겠습니까?\n(오류로 인해 새로운 게임 진행이 불가능할 때만 사용하세요. 진행 중이던 모든 데이터가 삭제됩니다.)")) {
+                    socket.emit("host_end_game");
+                }
             }
 
             socket.on("game_ended_reset", () => {
@@ -593,7 +631,6 @@
                 btn.style.boxShadow = "0 4px 0 #999";
             });
 
-            // [수정 3번] 뒤로가기 및 새로고침 방지 모달 이벤트 추가
             window.addEventListener('beforeunload', function (e) {
                 e.preventDefault();
                 e.returnValue = '새로고침 할 시 데이터가 초기화되어 정상적인 게임 진행이 불가합니다. 새로고침하시겠습니까?'; 
