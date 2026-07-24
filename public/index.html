@@ -5,6 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>가공방 빙고 게임</title>
         <script src="/socket.io/socket.io.js"></script>
+        <!-- [추가됨] 폭죽 효과를 위한 외부 라이브러리 불러오기 -->
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
         <link
             href="https://fonts.googleapis.com/css2?family=Jua&display=swap"
             rel="stylesheet"
@@ -117,7 +119,6 @@
                 outline: none;
             }
 
-            /* 글자 내부를 파먹지 않는 완벽하고 정교한 테두리 방식 */
             .cell-num {
                 position: relative;
                 z-index: 1;
@@ -130,7 +131,6 @@
                 -webkit-text-stroke: 0; 
             }
 
-            /* 하얀 메인 글씨 바로 뒤에 똑같은 크기의 글씨를 겹치고 테두리 부여 */
             .cell.checked .cell-num::before {
                 content: attr(data-num);
                 position: absolute;
@@ -144,7 +144,6 @@
                 z-index: -1; 
             }
         
-            /* 지속되는 네온 빛 효과 */
             .cell.bingo-glow {
                 box-shadow:
                     inset 2px 2px 5px rgba(255, 255, 255, 0.8),
@@ -153,7 +152,6 @@
                 z-index: 5;
             }
 
-            /* 통통 튀어오르는 애니메이션만 전담하는 클래스 */
             .cell.bingo-animate {
                 animation: bingoPop 0.4s ease-out;
             }
@@ -253,7 +251,6 @@
                 transform: none;
             }
 
-            /* 하단 버튼 컨테이너 정렬 */
             .action-buttons {
                 display: flex;
                 justify-content: center;
@@ -277,7 +274,7 @@
                 가공방 빙고 게임
             </h1>
             <div style="font-size: 20px; color: #999; margin-bottom: 25px">
-                ver. 1.2.7
+                ver. 1.0.0
             </div>
 
             <div style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;">
@@ -299,7 +296,6 @@
             <h1 style="color: #fb726d; font-weight: normal">대기 중...</h1>
             <p>호스트가 게임을 시작할 때까지 기다려주세요.</p>
             
-            <!-- [추가됨] 대기 중 입장 취소(나가기) 버튼 -->
             <button onclick="leaveGame()" style="background-color: #7f8c8d; box-shadow: 0 4px 0 #5c666a; margin-top: 30px; font-size: 16px; padding: 8px 16px;">
                 🚪 입장 취소 (처음으로)
             </button>
@@ -320,7 +316,6 @@
             </div>
 
             <div class="action-buttons">
-                <!-- 랜덤 채우기 버튼 -->
                 <button
                     id="random-fill-btn"
                     style="background-color: #9b59b6; box-shadow: 0 4px 0 #8e44ad;"
@@ -349,6 +344,13 @@
 
         <div id="playing-screen" class="screen">
             <h3 class="nickname-display" id="my-name-playing"></h3>
+            
+            <!-- [추가됨] 방금 뽑힌 번호 전광판 UI -->
+            <div id="latest-number-display" style="display: none; margin-bottom: 15px; font-size: 18px; color: #7f8c8d; align-items: center; justify-content: center;">
+                방금 뽑힌 번호: 
+                <span id="latest-number" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background-color: #2980b9; color: white; border-radius: 50%; font-weight: bold; font-size: 20px; box-shadow: 0 3px 0 #1c5980; margin-left: 8px;"></span>
+            </div>
+
             <div
                 id="current-bingo-count"
                 style="
@@ -425,7 +427,7 @@
             let checkedCells = new Array(25).fill(false);
             let amIWinner = false;
             let animatedLines = new Set();
-            let isIntentionallyLeaving = false; // [추가됨] 의도적인 나가기를 체크하는 변수
+            let isIntentionallyLeaving = false; 
 
             function showScreen(screenId) {
                 document
@@ -459,11 +461,10 @@
                 });
             }
 
-            // [추가됨] 대기 취소 및 나가기 함수
             function leaveGame() {
                 if (confirm("입장을 취소하고 처음 화면으로 돌아가시겠습니까?")) {
-                    isIntentionallyLeaving = true; // 새로고침 방지 알림창을 무시하도록 설정
-                    window.location.reload(); // 새로고침 시 서버와의 소켓이 자동으로 끊어지며 완벽히 초기화됨
+                    isIntentionallyLeaving = true;
+                    window.location.reload(); 
                 }
             }
 
@@ -588,6 +589,9 @@
                 animatedLines.clear();
                 document.getElementById("current-bingo-count").innerText =
                     `현재 달성한 빙고: 0줄`;
+                
+                // 전광판 초기화
+                document.getElementById("latest-number-display").style.display = "none";
                 renderPlayBoard();
             });
 
@@ -605,6 +609,16 @@
 
             socket.on("sync_board_state", (drawnNums) => {
                 checkedCells.fill(false);
+
+                // [추가됨] 방금 뽑힌 번호 전광판 업데이트 로직
+                const latestDisplay = document.getElementById("latest-number-display");
+                const latestNumSpan = document.getElementById("latest-number");
+                if (drawnNums && drawnNums.length > 0) {
+                    latestNumSpan.innerText = drawnNums[drawnNums.length - 1]; // 배열의 마지막 요소가 방금 뽑힌 번호
+                    latestDisplay.style.display = "flex";
+                } else {
+                    latestDisplay.style.display = "none";
+                }
 
                 document
                     .querySelectorAll("#play-board .cell")
@@ -717,6 +731,15 @@
                     title.innerText = "🎉 목표 빙고 달성!";
                     title.style.color = "#e74c3c";
                     message.innerHTML = `축하합니다! 빙고를 완성했습니다!`;
+                    
+                    // [추가됨] 우승 시 화려한 폭죽 애니메이션 실행
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        zIndex: 9999
+                    });
+
                 } else {
                     title.innerText = "🎊 빙고 달성자 발생!";
                     title.style.color = "#2980b9";
@@ -754,15 +777,15 @@
                 document.getElementById("cancel-ready-btn").style.display = "none";
                 
                 document.getElementById("random-fill-btn").style.display = "inline-block";
+                document.getElementById("latest-number-display").style.display = "none"; // 전광판 가리기
                 
                 document.getElementById("guest-winner-modal").style.display = "none";
                 document.getElementById("number-select-popup").style.display = "none";
                 showScreen("waiting-screen");
             });
 
-            // [수정됨] 뒤로가기 및 새로고침 방지 모달 (의도적 나가기일 경우 무시)
             window.addEventListener('beforeunload', function (e) {
-                if (isIntentionallyLeaving) return; // '입장 취소' 버튼을 누른 경우 경고창 없이 바로 나갑니다.
+                if (isIntentionallyLeaving) return; 
                 
                 e.preventDefault();
                 e.returnValue = '새로고침 할 시 데이터가 초기화되어 정상적인 게임 진행이 불가합니다. 새로고침하시겠습니까?'; 
