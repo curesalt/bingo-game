@@ -5,6 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>빙고 게임 - 호스트 화면</title>
         <script src="/socket.io/socket.io.js"></script>
+        <!-- [추가됨] 폭죽 효과를 위한 외부 라이브러리 불러오기 -->
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
         <link
             href="https://fonts.googleapis.com/css2?family=Jua&display=swap"
             rel="stylesheet"
@@ -278,7 +280,6 @@
         </style>
     </head>
     <body>
-        <!-- [수정됨] 클릭 시 바로 종료되지 않고 커스텀 모달을 띄우는 함수 실행 -->
         <button id="btn-emergency" class="emergency-btn" onclick="promptEmergencyExit()">
             🚨 비상탈출 (대기실 복귀)
         </button>
@@ -344,9 +345,15 @@
 
         <div id="host-drawing" class="screen">
             <h1 style="font-size: 36px">🎯 번호 뽑기</h1>
-            <p style="font-size: 18px">
+            <p style="font-size: 18px; margin-bottom: 5px;">
                 아래 숫자를 클릭하여 전송하세요.<br>(잘못 누른 번호는 다시 누르면 취소됩니다) 
             </p>
+
+            <!-- [추가됨] 호스트용 방금 뽑힌 번호 전광판 UI -->
+            <div id="latest-number-display" style="display: none; justify-content: center; align-items: center; margin: 15px auto; background: white; padding: 10px 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 2px solid #2980b9; width: fit-content;">
+                <span style="font-size: 20px; font-weight: bold; color: #333; margin-right: 15px;">방금 뽑힌 번호</span>
+                <div id="latest-number" style="width: 50px; height: 50px; border-radius: 50%; background-color: #2980b9; color: white; font-size: 28px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #1c5980;"></div>
+            </div>
 
             <div id="winner-panel">
                 <h3>🏆 빙고 달성자</h3>
@@ -421,7 +428,6 @@
             </div>
         </div>
 
-        <!-- [추가됨] 비상탈출 커스텀 모달창 -->
         <div id="emergency-modal" class="modal-overlay">
             <div class="modal-content">
                 <h3 style="margin-top: 0; color: #c0392b; font-weight: normal;">🚨 비상탈출</h3>
@@ -515,6 +521,9 @@
                     .getElementById("host-filling")
                     .classList.remove("active");
                 document.getElementById("host-drawing").classList.add("active");
+                
+                // 호스트 전광판 초기화
+                document.getElementById("latest-number-display").style.display = "none";
                 renderHostNumberPool();
             }
 
@@ -535,6 +544,16 @@
             }
 
             socket.on("sync_board_state", (drawnNums) => {
+                // [추가됨] 방금 뽑힌 번호 전광판 업데이트 로직
+                const latestDisplay = document.getElementById("latest-number-display");
+                const latestNumSpan = document.getElementById("latest-number");
+                if (drawnNums && drawnNums.length > 0) {
+                    latestNumSpan.innerText = drawnNums[drawnNums.length - 1]; // 배열의 마지막 요소가 방금 뽑힌 번호
+                    latestDisplay.style.display = "flex";
+                } else {
+                    latestDisplay.style.display = "none";
+                }
+
                 for (let i = 1; i <= 50; i++) {
                     const btn = document.getElementById(`host-num-${i}`);
                     if (btn) {
@@ -559,6 +578,14 @@
                 document.getElementById("modal-winners-name").innerText =
                     nicknames.join(", ");
                 document.getElementById("winner-modal").style.display = "flex";
+                
+                // [추가됨] 누군가 빙고를 달성하면 호스트 화면에서도 축하 폭죽을 터뜨림!
+                confetti({
+                    particleCount: 200,
+                    spread: 100,
+                    origin: { y: 0.5 },
+                    zIndex: 9999
+                });
             });
 
             socket.on("retract_winners", (currentWinners) => {
@@ -594,7 +621,6 @@
                 document.getElementById("winner-modal").style.display = "none";
             }
 
-            // [추가됨] 비상탈출 모달 제어 함수
             function promptEmergencyExit() {
                 document.getElementById('emergency-modal').style.display = 'flex';
             }
@@ -605,7 +631,7 @@
 
             function executeEmergencyExit() {
                 closeEmergencyModal();
-                endGame(); // 기존 강제 종료 함수 재사용
+                endGame(); 
             }
 
             function forceResetServer() {
@@ -618,6 +644,7 @@
                 document.getElementById("winner-panel").style.display = "none";
                 document.getElementById("winner-list").innerHTML = "";
                 document.getElementById("btn-emergency").style.display = "none";
+                document.getElementById("latest-number-display").style.display = "none"; // 전광판 숨김
 
                 document
                     .querySelectorAll(".screen")
